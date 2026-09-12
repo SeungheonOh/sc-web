@@ -132,5 +132,12 @@
     "revision": "985c18f75a71ff721370940666d71fda53edbb14",
     "subdirectory": "",
     "patch": "patches/libsodium-clib.patch"
+  },
+  {
+    "directory": "browser-wasi-shim-0.4.2",
+    "url": "https://registry.npmjs.org/@bjorn3/browser_wasi_shim/-/browser_wasi_shim-0.4.2.tgz",
+    "sha256": "9c0281520d0e99f027ec7c1c79b4036c0f8168ed9bf98aba19db4737a1333782",
+    "archiveRoot": "package",
+    "patch": null
   }
 ]

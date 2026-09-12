@@ -3,16 +3,17 @@
 from pathlib import Path
 import hashlib
 import json
-import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
 
-HERE = Path(__file__).resolve().parent
-VENDOR = Path(os.environ.get('SC_TOOLS_VENDOR', HERE / 'vendor')).resolve()
-CACHE = HERE / 'downloads'
+sys.dont_write_bytecode = True
+from paths import DEPS, DOWNLOADS, PROJECT, ROOT
+
+HERE = ROOT / 'wasm'
 
 
 def run(*args, cwd=None, quiet=False):
@@ -21,7 +22,7 @@ def run(*args, cwd=None, quiet=False):
 
 
 def prepare(dep):
-    dest = VENDOR / dep['directory']
+    dest = DEPS / dep['directory']
     patch = HERE / dep['patch'] if dep.get('patch') else None
     fingerprint = hashlib.sha256(json.dumps(dep, sort_keys=True).encode() +
                                  (patch.read_bytes() if patch else b'')).hexdigest()
@@ -30,10 +31,10 @@ def prepare(dep):
         print('Ready:', dep['directory'], flush=True)
         return
     if not dest.exists():
-        with tempfile.TemporaryDirectory(dir=CACHE) as temporary:
+        with tempfile.TemporaryDirectory(dir=DOWNLOADS) as temporary:
             temp = Path(temporary)
             if 'url' in dep:
-                archive = CACHE / (dep['directory'] + '.tar.gz')
+                archive = DOWNLOADS / (dep['directory'] + '.tar.gz')
                 if not archive.exists():
                     print('Download:', dep['url'], flush=True)
                     partial = archive.with_suffix('.partial')
@@ -71,7 +72,19 @@ def prepare(dep):
 
 
 if __name__ == '__main__':
-    VENDOR.mkdir(parents=True, exist_ok=True)
-    CACHE.mkdir(parents=True, exist_ok=True)
+    DEPS.mkdir(parents=True, exist_ok=True)
+    DOWNLOADS.mkdir(parents=True, exist_ok=True)
     for dependency in json.loads((HERE / 'dependencies.json').read_text()):
         prepare(dependency)
+    # Cabal receives a generated project with absolute paths to the external
+    # dependencies and this recipe's small application entry point.
+    lines = []
+    for line in (ROOT / 'cabal.wasm.project.in').read_text().splitlines():
+        path = line.strip()
+        if path.startswith('@DEPS@/'):
+            line = '  ' + json.dumps(str(DEPS / path[len('@DEPS@/'):]))
+        elif path == '@APP@':
+            line = '  ' + json.dumps(str(ROOT / 'wasm/app'))
+        lines.append(line)
+    PROJECT.write_text('\n'.join(lines) + '\n')
+    print('Cabal project:', PROJECT)

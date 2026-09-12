@@ -1,44 +1,274 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Build and balance Cardano smart contract transactions with sc-tools compiled to WebAssembly, entirely in your browser.">
-  <title>sc-tools · Browser transaction lab</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e2424'/%3E%3Cpath d='M8 11h16M8 16h10M8 21h16' stroke='%2359e0b4' stroke-width='3'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
-</head>
-<body>
-<header><a class="brand" href="./">sc-tools<span>/ browser lab</span></a><span class="badge">WASM · LOCAL LEDGER</span></header>
-<main>
-  <div class="intro"><div><p class="eyebrow">CARDANO TRANSACTIONS, IN YOUR BROWSER</p><h1>Lock. Balance. Spend.</h1><p>Run a small contract through sc-tools, from selecting coins to validating the signed transactions.</p></div><div class="runtime"><span id="runtime-state">Loading WebAssembly…</span><small>Haskell → WASM → your browser</small></div></div>
-  <div class="workspace">
-    <section class="setup" aria-labelledby="contract-title">
-      <div class="section-label">01 / CONTRACT</div><h2 id="contract-title">Matching number</h2>
-      <p>Funds can be spent when the supplied number matches the number stored with the output.</p>
-      <pre class="contract"><code>validate datum redeemer _ =
-  if datum == redeemer
-    then ()
-    else error ()</code></pre>
-      <form id="scenario">
-        <label for="amount">Amount to lock <span>ADA</span></label><input id="amount" name="amount" type="text" inputmode="decimal" value="10" required autocomplete="off">
-        <div class="fields"><div><label for="datum">Stored number</label><input id="datum" name="datum" type="text" inputmode="numeric" value="42" required autocomplete="off"></div><div><label for="redeemer">Supplied number</label><input id="redeemer" name="redeemer" type="text" inputmode="numeric" value="42" required autocomplete="off"></div></div>
-        <button id="run" type="submit" disabled>Build & balance transactions <span aria-hidden="true">↗</span></button>
-        <button id="wrong-number" class="secondary" type="button">Try a number that fails</button>
-      </form>
-      <p class="note">Each run starts with 100 ADA in a test wallet. Funds and ledger state exist only in this browser. These transactions are not submitted to a live network.</p>
-    </section>
-    <section class="results" aria-labelledby="results-title">
-      <div class="results-heading"><div><div class="section-label">02 / TRANSACTIONS</div><h2 id="results-title">Build results</h2></div><span id="duration"></span></div>
-      <div id="status" role="status" aria-live="polite">Preparing the sc-tools runtime.</div>
-      <div id="transactions"><div class="empty"><span class="empty-mark" aria-hidden="true">{ }</span><h3>Ready for a round trip</h3><p>Build a transaction to lock funds, then a transaction to spend them. Fees, change, and script execution are calculated locally.</p></div></div>
-      <details id="trace-details"><summary>Balancing trace <span id="trace-count"></span></summary><pre id="trace">Run a scenario to inspect sc-tools’ balancing events.</pre></details>
-      <details><summary>Contract & runtime details</summary><dl><dt>Builder</dt><dd>Convex.BuildTx</dd><dt>Balancer</dt><dd>Convex.CoinSelection</dd><dt>Validation</dt><dd>Cardano ledger + Plutus evaluator</dd><dt>Contract</dt><dd>Plutus V2 · constructed in WebAssembly</dd><dt>Execution</dt><dd>Browser Web Worker · no transaction service</dd></dl><pre id="script">Contract bytes will appear after running.</pre></details>
-      <button id="download" class="secondary" disabled>Download result JSON</button>
-    </section>
-  </div>
-</main>
-<footer><span>sc-tools <a href="https://github.com/input-output-hk/sc-tools/tree/4546122230491db4839a4a42fc2bc601f7900909" target="_blank" rel="noreferrer">4546122</a></span><span>Real Haskell. Real balancing. Local test funds.</span></footer>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>sc-tools · Transaction studio</title>
+    <meta
+      name="description"
+      content="Compose Cardano transactions from blocks, balance with your wallet in WebAssembly, and inspect every field."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23204d3a'/%3E%3Cpath d='M8 8h10v6H8zm6 10h10v6H14z' fill='%23d6f392'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./"
+        >sc-tools <span class="brand-detail">/ Transaction studio</span></a
+      >
+      <div class="top-actions">
+        <button
+          id="inspector-toggle"
+          class="quiet"
+          aria-controls="transaction-inspector"
+          aria-expanded="true"
+        >
+          Hide inspector
+        </button>
+        <span id="engine-status" class="status">Loading engine</span
+        ><select id="network" aria-label="Cardano network">
+          <option value="preprod">Preprod</option>
+          <option value="preview">Preview</option>
+          <option value="mainnet">Mainnet</option></select
+        ><button id="connect" class="primary">Connect wallet</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="palette">
+        <div class="panel-heading">
+          <h2>Transaction blocks</h2>
+        </div>
+        <div id="catalog"></div>
+        <div class="chain-settings">
+          <h3>Chain data</h3>
+          <label
+            >Provider<select id="provider">
+              <option value="blockfrost">Blockfrost</option>
+              <option value="snapshot">Import chain snapshot</option>
+            </select></label
+          ><label id="api-key-label"
+            >Blockfrost project ID<input
+              id="api-key"
+              type="password"
+              autocomplete="off"
+              placeholder="Kept in this tab only" /></label
+          ><button id="load-chain" class="secondary">Refresh chain data</button
+          ><input
+            id="snapshot-file"
+            type="file"
+            accept="application/json,.json"
+            hidden
+          />
+          <p id="chain-status" class="muted">
+            Add a Blockfrost project ID for current chain parameters. Your ID
+            stays in this tab.
+          </p>
+        </div>
+      </aside>
+      <section class="composer">
+        <div class="composer-heading">
+          <div>
+            <h1>Untitled transaction</h1>
+          </div>
+          <div class="recipe-actions">
+            <button id="import-recipe" class="quiet">Import</button
+            ><button id="export-recipe" class="quiet">Export</button>
+          </div>
+        </div>
+        <div class="wallet-strip">
+          <div>
+            <strong id="wallet-name">No wallet connected</strong>
+            <div id="wallet-detail" class="muted">
+              Connect to use wallet inputs and change.
+            </div>
+          </div>
+          <button id="refresh-wallet" class="quiet" hidden>Refresh</button>
+        </div>
+        <div id="blocks" class="block-list"></div>
+        <div class="balance-bar">
+          <div>
+            <strong id="recipe-count">1 block</strong
+            ><label class="witness-setting"
+              >Additional signatures<input
+                id="extra-witnesses"
+                type="number"
+                min="0"
+                max="100"
+                value="0"
+                title="Reserve space for signatures not covered by automatic estimation"
+            /></label>
+          </div>
+          <button id="balance" class="primary">Balance transaction</button>
+        </div>
+        <div id="message" role="status" aria-live="polite"></div>
+      </section>
+      <aside
+        class="inspector"
+        id="transaction-inspector"
+        aria-label="Transaction inspector"
+        data-mode="docked"
+      >
+        <div
+          class="inspector-divider"
+          role="separator"
+          aria-label="Resize inspector width"
+          aria-orientation="vertical"
+          aria-valuemin="280"
+          aria-valuenow="360"
+          tabindex="0"
+        ></div>
+        <div
+          class="inspector-titlebar"
+          tabindex="0"
+          aria-label="Move inspector with arrow keys when floating"
+        >
+          <h2>Transaction inspector</h2>
+          <div class="inspector-window-actions">
+            <span id="result-state" class="pill">DRAFT</span
+            ><button id="inspector-float" class="quiet">Float</button
+            ><button id="inspector-full" class="quiet" aria-pressed="false">
+              Full screen
+            </button>
+            <button id="inspector-hide" class="quiet">Hide</button>
+          </div>
+        </div>
+        <div class="inspector-scroll">
+          <div class="tabs" role="tablist">
+            <button
+              class="active"
+              role="tab"
+              aria-selected="true"
+              data-tab="summary"
+            >
+              Overview</button
+            ><button role="tab" aria-selected="false" data-tab="json">
+              JSON</button
+            ><button role="tab" aria-selected="false" data-tab="cbor">
+              CBOR</button
+            ><button role="tab" aria-selected="false" data-tab="trace">
+              Trace
+            </button>
+          </div>
+          <div id="inspection">
+            <div class="empty-inspector">
+              <p>
+                Balance to inspect inputs, outputs, withdrawals, fees, and
+                change.
+              </p>
+            </div>
+          </div>
+          <div id="result-actions" hidden>
+            <button id="download-tx" class="secondary">
+              Download unsigned transaction</button
+            ><button id="sign" class="primary">Request wallet signature</button>
+            <p class="muted">
+              Signing opens your wallet for approval. Nothing is submitted
+              automatically.
+            </p>
+            <button id="download-signed" class="secondary" hidden>
+              Download signed transaction</button
+            ><button id="submit" class="primary" hidden>
+              Submit signed transaction
+            </button>
+          </div>
+          <details class="utxo-panel">
+            <summary>Wallet UTXOs <span id="utxo-count">0</span></summary>
+            <div id="utxos">
+              <p class="muted">
+                Connect a wallet to inspect its spendable outputs.
+              </p>
+            </div>
+          </details>
+        </div>
+        <button
+          class="inspector-resize quiet"
+          aria-label="Resize inspector; use arrow keys"
+          title="Drag to resize"
+        >
+          Resize
+        </button>
+      </aside>
+    </main>
+    <dialog
+      id="import-dialog"
+      class="json-dialog"
+      aria-labelledby="import-title"
+    >
+      <div class="dialog-heading">
+        <h2 id="import-title">Import transaction JSON</h2>
+        <button id="close-import" class="quiet">Close</button>
+      </div>
+      <p class="field-note">
+        Paste JSON from Export to restore the editable transaction.
+      </p>
+      <label for="import-json">Transaction JSON</label>
+      <textarea
+        id="import-json"
+        spellcheck="false"
+        placeholder="Paste transaction JSON here"
+        aria-describedby="import-error"
+      ></textarea>
+      <p
+        id="import-error"
+        class="json-dialog-message error"
+        role="alert"
+        hidden
+      ></p>
+      <div class="json-dialog-actions">
+        <button id="import-json-submit" class="primary">Import JSON</button>
+        <button id="import-json-file" class="secondary">Choose file</button>
+        <input
+          id="recipe-file"
+          type="file"
+          accept="application/json,.json"
+          hidden
+        />
+      </div>
+    </dialog>
+    <dialog
+      id="export-dialog"
+      class="json-dialog"
+      aria-labelledby="export-title"
+    >
+      <div class="dialog-heading">
+        <h2 id="export-title">Export transaction JSON</h2>
+        <button id="close-export" class="quiet">Close</button>
+      </div>
+      <p class="field-note">
+        Copy this JSON to save or share the editable transaction.
+      </p>
+      <label for="export-json">Transaction JSON</label>
+      <textarea id="export-json" spellcheck="false" readonly></textarea>
+      <p
+        id="export-message"
+        class="json-dialog-message"
+        role="status"
+        hidden
+      ></p>
+      <div class="json-dialog-actions">
+        <button id="copy-recipe-json" class="primary">Copy JSON</button>
+        <button id="download-recipe-json" class="secondary">
+          Download file
+        </button>
+      </div>
+    </dialog>
+    <dialog id="wallet-dialog">
+      <div class="dialog-heading">
+        <h2>Connect wallet</h2>
+        <button class="quiet" id="close-wallet" aria-label="Close">
+          Close
+        </button>
+      </div>
+      <div id="wallet-options"></div>
+      <p class="muted">
+        Use a browser with a CIP-30 wallet extension. Your keys stay in your
+        wallet.
+      </p>
+    </dialog>
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>

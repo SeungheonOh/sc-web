@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "build:wasm": "bash wasm/build.sh",
-    "serve": "python3 -m http.server 4173 --bind 127.0.0.1 --directory browser",
-    "test:browser": "node wasm/check-browser.mjs"
+    "serve": "python3 -B wasm/serve.py",
+    "test:browser": "bash wasm/test-browser.sh",
+    "deploy": "python3 -B wasm/deploy.py",
+    "test:editor": "node wasm/check-editor.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.62.1"

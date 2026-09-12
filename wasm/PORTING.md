@@ -4,7 +4,11 @@ This standalone recipe fetches and links the original sc-tools library sources a
 `4546122230491db4839a4a42fc2bc601f7900909`. It uses Cardano API 11.0.0.0,
 Plutus 1.63.0.0, and GHC WASM 9.12.4.20260731. The separate Cabal project
 selects the transaction, coin-selection, wallet, optics, and mockchain libraries
-from the ignored `vendor/sc-tools/` dependency directory.
+from `deps/sc-tools/` in the external build cache.
+
+The cache defaults to `~/.cache/sc-tools-wasm`, respects `XDG_CACHE_HOME`, and
+can be overridden with `SC_TOOLS_WASM_CACHE`. Downloads, extracted sources,
+compiler output, browser artifacts, and test dependencies all stay there.
 
 `dependencies.json` records source archive hashes or immutable Git revisions.
 `patches/` contains the differences applied to those sources, including Cabal
@@ -21,18 +25,23 @@ and refuses to overwrite a dependency with conflicting local modifications.
 | Foundation | Use WASI memory-map emulation, little-endian configuration, WASI secure randomness, and clock wrappers. Native socket bindings are excluded from this package's WASM build. |
 | Other portable dependencies | Use pinned WASM-compatible basement, network, cborg, ram, memory, cryptonite, and double-conversion sources/patches. Disable Argon2 native threading in crypton. |
 | CBOR compatibility | Restore the `decodeWithByteSpan` tuple interface expected by the selected Cardano packages, using the decoder's byte offsets. |
-| Build graph | Exclude native database tools and unrelated test/executable components from the vendored API/consensus package descriptions. Retain the libraries needed by the actual builder and local ledger. |
+| Build graph | Exclude native database tools and unrelated test/executable components from the patched API/consensus package descriptions. Retain the libraries needed by the actual builder and local ledger. |
 | GHC compatibility | Add required KES size constraints and match the heap-size C helper's 64-bit return type. |
 | API compatibility | Use the crypto package's public BLS proof-of-possession context and disambiguate the ledger's `ByteSpan` type from the newer CBOR export. |
 
-The Web Worker provides only WASI system calls and an in-memory filesystem.
-It does not implement Cardano operations. Every scenario creates a fresh WASM
-instance and a fresh sc-tools mockchain. Cryptographic signing, Plutus execution,
-coin selection, fees, balancing, transaction construction, CBOR serialization,
-and ledger acceptance run inside that instance.
+The Web Worker provides WASI system calls and an in-memory filesystem. It does
+not implement Cardano operations. `LiveTx.hs` supplies a `MonadBlockchain`
+instance backed by wallet UTXOs and an explicit chain-data snapshot. The editor
+uses `Convex.BuildTx` and `Convex.CoinSelection.balanceTx` without the mockchain.
 
-This is a browser port demonstrated against a local Conway test ledger. It is
-not a complete port of the repository's node services or database tools, and
-the test transactions reference synthetic UTXOs. The included checks exercise
-the demo and specific integer-width regressions; they are not a full Cardano
-conformance suite.
+A second balancing pass reserves Cardano's conservative key-witness count and
+additional native-script/signing witnesses. Collateral return is recalculated
+for the resulting fee; serialization and minimum-fee checks repeat until the fee
+covers the final fields. This avoids underfunded collateral when the witness
+estimate increases the fee. Signing assembles the CIP-30 witness set in WASM and
+checks the fee against the returned signature count.
+
+Each request creates a fresh WASM instance. The matching-number contract and
+12 integer-width regressions remain in the regression-only CLI entry point.
+Browser integration tests exercise the live bridge with a CIP-30 test adapter;
+they do not constitute full Cardano conformance or an actual wallet submission.

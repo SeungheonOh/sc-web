@@ -41,30 +41,30 @@ source-repository-package
   tag: 211b95baad422966c9e719ed70cbc189c58eaae5
 
 packages:
-  wasm/vendor/kes-agent-1.2.0.0
-  wasm/vendor/cardano-crypto-1.3.0
-  wasm/vendor/cardano-prelude-0.2.2.0
-  wasm/vendor/plutus-core-1.63.0.0
-  wasm/app
-  wasm/vendor/foundation-0.0.30
-  wasm/vendor/ouroboros-consensus-3.0.1.0
-  wasm/vendor/cardano-api-11.0.0.0
-  wasm/vendor/cardano-crypto-class-2.5.0.0
-  wasm/vendor/cardano-crypto-praos-2.2.2.0
-  wasm/vendor/sc-tools/src/base
-  wasm/vendor/sc-tools/src/coin-selection
-  wasm/vendor/sc-tools/src/mockchain
-  wasm/vendor/sc-tools/src/optics
-  wasm/vendor/sc-tools/src/wallet
-  wasm/vendor/basement
-  wasm/vendor/double-conversion-2.0.5.0
-  wasm/vendor/network
-  wasm/vendor/ram
-  wasm/vendor/libsodium-clib
-  wasm/vendor/cborg-wasi
-  wasm/vendor/memory-0.18.0
-  wasm/vendor/cryptonite-0.30
-  wasm/vendor/crypton-1.0.6
+  @DEPS@/kes-agent-1.2.0.0
+  @DEPS@/cardano-crypto-1.3.0
+  @DEPS@/cardano-prelude-0.2.2.0
+  @DEPS@/plutus-core-1.63.0.0
+  @APP@
+  @DEPS@/foundation-0.0.30
+  @DEPS@/ouroboros-consensus-3.0.1.0
+  @DEPS@/cardano-api-11.0.0.0
+  @DEPS@/cardano-crypto-class-2.5.0.0
+  @DEPS@/cardano-crypto-praos-2.2.2.0
+  @DEPS@/sc-tools/src/base
+  @DEPS@/sc-tools/src/coin-selection
+  @DEPS@/sc-tools/src/mockchain
+  @DEPS@/sc-tools/src/optics
+  @DEPS@/sc-tools/src/wallet
+  @DEPS@/basement
+  @DEPS@/double-conversion-2.0.5.0
+  @DEPS@/network
+  @DEPS@/ram
+  @DEPS@/libsodium-clib
+  @DEPS@/cborg-wasi
+  @DEPS@/memory-0.18.0
+  @DEPS@/cryptonite-0.30
+  @DEPS@/crypton-1.0.6
 
 package secp256k1-clib
   flags: +schnorrsig +recovery +ecdh +extrakeys

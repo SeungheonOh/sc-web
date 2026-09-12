@@ -18,12 +18,13 @@ import Convex.MockChain.CoinSelection (tryBalanceAndSubmit)
 import Convex.MockChain.Defaults qualified as Defaults
 import Convex.Wallet qualified as Wallet
 import Convex.Wallet.MockWallet qualified as Wallet
-import Data.Aeson (Value, encode, object, (.=))
+import Data.Aeson (Value, eitherDecode, encode, object, (.=))
 import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Lazy.Char8 qualified as BL
 import Data.IORef
 import Data.Text.Encoding (decodeUtf8)
+import LiveTx (handleRequest)
 import MatchingNumber
 import PortChecks (portChecks)
 import System.Environment (getArgs)
@@ -96,6 +97,9 @@ main :: IO ()
 main = do
   args <- getArgs
   result <- case args of
+    ["json"] -> do
+      contents <- BL.getContents
+      either (pure . (\e -> object ["ok" .= False, "error" .= e])) handleRequest (eitherDecode contents)
     [a, d, r] | Just amount <- readMaybe a, Just datum <- readMaybe d, Just redeemer <- readMaybe r,
                  amount > 0, amount <= 1000000000000 -> runScenario amount datum redeemer
     _ -> pure $ object ["ok" .= False, "error" .= ("Expected positive lovelace amount, integer datum, integer redeemer" :: String)]

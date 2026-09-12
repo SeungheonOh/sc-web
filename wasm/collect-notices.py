@@ -6,9 +6,11 @@ import re
 import sys
 import tarfile
 
-root = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True
+from paths import BROWSER, BUILD, DEPS, ROOT
+
 toolchain = Path(sys.argv[1]).resolve()
-plan = json.loads((root / 'dist-wasm/cache/plan.json').read_text())
+plan = json.loads((BUILD / 'cache/plan.json').read_text())
 nodes = {node['id']: node for node in plan['install-plan']}
 visited = set()
 
@@ -24,18 +26,18 @@ packages = {(nodes[key]['pkg-name'], nodes[key]['pkg-version']): nodes[key] for 
 notice = re.compile(r'^(unlicense|licen[cs]e|copying|copyright|notice)([.\-_].*)?$', re.I)
 sections = ['sc-tools browser runtime — third-party notices\n\n'
             'Collected from the runtime dependency graph; unused library code may be eliminated by the linker.\n'
-            'The browser WASI shim licenses are also supplied in vendor/wasi/.\n']
+            'The browser WASI shim licenses are also supplied in wasi/.\n']
 missing = []
 for (name, version), node in sorted(packages.items()):
     files = []
     source = node.get('pkg-src', {})
     cabal_metadata = ''
     if name.startswith('convex-'):
-        files = [('sc-tools/LICENSE', (root / 'wasm/vendor/sc-tools/LICENSE').read_text())]
+        files = [('sc-tools/LICENSE', (DEPS / 'sc-tools/LICENSE').read_text())]
     elif name == 'sc-tools-browser':
-        files = [('LICENSE', (root / 'LICENSE').read_text())]
+        files = [('LICENSE', (ROOT / 'LICENSE').read_text())]
     elif source.get('type') in ('local', 'source-repo'):
-        path = Path(source['path']) if source['type'] == 'local' else next(p.parent for p in (root / 'dist-wasm/src').glob('*/' + name + '.cabal'))
+        path = Path(source['path']) if source['type'] == 'local' else next(p.parent for p in (BUILD / 'src').glob('*/' + name + '.cabal'))
         files = [(str(p.relative_to(path)), p.read_text(errors='replace')) for p in sorted(path.rglob('*'))
                  if p.is_file() and notice.match(p.name) and '.git' not in p.parts and 'dist-build' not in p.parts]
     else:
@@ -61,9 +63,9 @@ for (name, version), node in sorted(packages.items()):
         sections.append('\n' + '=' * 72 + f'\n{name} {version}\n' + '=' * 72 + '\n')
         for filename, contents in files:
             sections.append(f'\n{filename}\n\n{contents}\n')
-(root / 'browser/THIRD_PARTY_NOTICES.txt').write_text(''.join(sections))
+(BROWSER / 'THIRD_PARTY_NOTICES.txt').write_text(''.join(sections))
 print(f'Collected notices for {len(packages) - len(missing)} runtime packages.')
 if missing:
     print('Packages without a source notice found:', ', '.join(missing))
-    with (root / 'browser/THIRD_PARTY_NOTICES.txt').open('a') as output:
+    with (BROWSER / 'THIRD_PARTY_NOTICES.txt').open('a') as output:
         output.write('\nToolchain components without a separate notice in this installation: ' + ', '.join(missing) + '\n')

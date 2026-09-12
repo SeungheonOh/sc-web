@@ -1,0 +1,19 @@
+{
+  "name": "sc-tools-studio",
+  "account_id": "e855335a6175305976cc984075979c30",
+  "compatibility_date": "2026-09-12",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "sc.isotopy.xyz",
+      "custom_domain": true,
+    },
+  ],
+  "assets": {
+    "directory": "./browser",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none",
+  },
+  "send_metrics": false,
+}
