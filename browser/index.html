@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Build and balance Cardano smart contract transactions with sc-tools compiled to WebAssembly, entirely in your browser.">
+  <title>sc-tools · Browser transaction lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e2424'/%3E%3Cpath d='M8 11h16M8 16h10M8 21h16' stroke='%2359e0b4' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+<header><a class="brand" href="./">sc-tools<span>/ browser lab</span></a><span class="badge">WASM · LOCAL LEDGER</span></header>
+<main>
+  <div class="intro"><div><p class="eyebrow">CARDANO TRANSACTIONS, IN YOUR BROWSER</p><h1>Lock. Balance. Spend.</h1><p>Run a small contract through sc-tools, from selecting coins to validating the signed transactions.</p></div><div class="runtime"><span id="runtime-state">Loading WebAssembly…</span><small>Haskell → WASM → your browser</small></div></div>
+  <div class="workspace">
+    <section class="setup" aria-labelledby="contract-title">
+      <div class="section-label">01 / CONTRACT</div><h2 id="contract-title">Matching number</h2>
+      <p>Funds can be spent when the supplied number matches the number stored with the output.</p>
+      <pre class="contract"><code>validate datum redeemer _ =
+  if datum == redeemer
+    then ()
+    else error ()</code></pre>
+      <form id="scenario">
+        <label for="amount">Amount to lock <span>ADA</span></label><input id="amount" name="amount" type="text" inputmode="decimal" value="10" required autocomplete="off">
+        <div class="fields"><div><label for="datum">Stored number</label><input id="datum" name="datum" type="text" inputmode="numeric" value="42" required autocomplete="off"></div><div><label for="redeemer">Supplied number</label><input id="redeemer" name="redeemer" type="text" inputmode="numeric" value="42" required autocomplete="off"></div></div>
+        <button id="run" type="submit" disabled>Build & balance transactions <span aria-hidden="true">↗</span></button>
+        <button id="wrong-number" class="secondary" type="button">Try a number that fails</button>
+      </form>
+      <p class="note">Each run starts with 100 ADA in a test wallet. Funds and ledger state exist only in this browser. These transactions are not submitted to a live network.</p>
+    </section>
+    <section class="results" aria-labelledby="results-title">
+      <div class="results-heading"><div><div class="section-label">02 / TRANSACTIONS</div><h2 id="results-title">Build results</h2></div><span id="duration"></span></div>
+      <div id="status" role="status" aria-live="polite">Preparing the sc-tools runtime.</div>
+      <div id="transactions"><div class="empty"><span class="empty-mark" aria-hidden="true">{ }</span><h3>Ready for a round trip</h3><p>Build a transaction to lock funds, then a transaction to spend them. Fees, change, and script execution are calculated locally.</p></div></div>
+      <details id="trace-details"><summary>Balancing trace <span id="trace-count"></span></summary><pre id="trace">Run a scenario to inspect sc-tools’ balancing events.</pre></details>
+      <details><summary>Contract & runtime details</summary><dl><dt>Builder</dt><dd>Convex.BuildTx</dd><dt>Balancer</dt><dd>Convex.CoinSelection</dd><dt>Validation</dt><dd>Cardano ledger + Plutus evaluator</dd><dt>Contract</dt><dd>Plutus V2 · constructed in WebAssembly</dd><dt>Execution</dt><dd>Browser Web Worker · no transaction service</dd></dl><pre id="script">Contract bytes will appear after running.</pre></details>
+      <button id="download" class="secondary" disabled>Download result JSON</button>
+    </section>
+  </div>
+</main>
+<footer><span>sc-tools <a href="https://github.com/input-output-hk/sc-tools/tree/4546122230491db4839a4a42fc2bc601f7900909" target="_blank" rel="noreferrer">4546122</a></span><span>Real Haskell. Real balancing. Local test funds.</span></footer>
+</body>
+</html>

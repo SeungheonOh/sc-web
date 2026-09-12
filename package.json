@@ -1,0 +1,13 @@
+{
+  "name": "sc-tools-wasm",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:wasm": "bash wasm/build.sh",
+    "serve": "python3 -m http.server 4173 --bind 127.0.0.1 --directory browser",
+    "test:browser": "node wasm/check-browser.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.62.1"
+  }
+}

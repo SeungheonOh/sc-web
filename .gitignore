@@ -1,0 +1,14 @@
+/wasm/vendor/
+/wasm/downloads/
+/dist-wasm/
+/node_modules/
+/.wasm-toolchain/
+/wasm/evidence/
+/wasm/*.log
+/wasm/*.wasm
+/browser/*.wasm.gz
+/browser/runtime-manifest.json
+/browser/THIRD_PARTY_NOTICES.txt
+/cabal.wasm.project.local
+__pycache__/
+*.pyc
