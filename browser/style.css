@@ -669,6 +669,36 @@ dialog::backdrop {
   max-width: 760px;
   max-height: calc(100dvh - 16px);
 }
+.examples-dialog {
+  width: min(640px, calc(100vw - 16px));
+  max-width: 640px;
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+}
+.examples-dialog > label {
+  display: grid;
+  gap: 3px;
+}
+.examples-dialog .field-note {
+  margin: 6px 0;
+}
+.example-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.example-fields label {
+  min-width: 0;
+}
+.example-wide {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.example-note {
+  margin: 0;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+}
 .json-dialog > label {
   margin-top: 8px;
   margin-bottom: 3px;

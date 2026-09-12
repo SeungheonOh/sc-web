@@ -2,6 +2,7 @@ import { ada } from "./format.js";
 import { bindAssets } from "./assets.js";
 import { renderTransaction } from "./inspector.js";
 import { setupInspectorPanel } from "./inspector-panel.js";
+import { setupExamples } from "./examples.js";
 import { Engine } from "./engine.js";
 import {
   discoverWallets,
@@ -38,6 +39,35 @@ const state = {
   busy: false,
 };
 const engine = new Engine();
+const examples = setupExamples({
+  engine,
+  context: () => ({
+    network: $("#network").value,
+    wallet: state.wallet,
+    rawWallet: state.rawWallet,
+  }),
+  load: ({ blocks, title, next, kind, scripts }) => {
+    state.blocks = blocks;
+    state.example = { kind, scripts };
+    state.balanceContext = null;
+    state.failedTrace = null;
+    $("#extra-witnesses").value = "0";
+    $("#transaction-title").textContent = title;
+    $("#example-note").textContent = next;
+    $("#example-note").hidden = false;
+    invalidate();
+    renderBlocks();
+    message(
+      "Example loaded. Review the blocks, then balance with your wallet.",
+      "success",
+    );
+  },
+});
+function clearExample() {
+  state.example = null;
+  $("#transaction-title").textContent = "Untitled transaction";
+  $("#example-note").hidden = true;
+}
 const message = (text, kind = "") => {
   $("#message").textContent = text;
   $("#message").className = kind;
@@ -575,7 +605,8 @@ async function sign() {
 async function submit() {
   if (!state.signed || !state.result) return;
   const result = state.result,
-    signed = state.signed;
+    signed = state.signed,
+    example = state.example;
   $("#submit").disabled = true;
   try {
     const current = await readWallet(state.api);
@@ -589,8 +620,9 @@ async function submit() {
     if (result !== state.result || signed !== state.signed)
       throw new Error("The transaction changed.");
     const txid = await state.api.submitTx(signed.transaction.cborHex);
+    const nextExample = examples.remember(example, result, signed.transaction);
     message(
-      `Submitted to ${result.network}: ${txid}. Awaiting network confirmation.`,
+      `Submitted to ${result.network}: ${txid}. Awaiting network confirmation.${nextExample}`,
       "success",
     );
     $("#submit").hidden = true;
@@ -612,6 +644,7 @@ $("#balance").onclick = balance;
 $("#sign").onclick = sign;
 $("#submit").onclick = submit;
 $("#network").onchange = () => {
+  clearExample();
   state.chain = null;
   state.provider = null;
   invalidate();
@@ -724,6 +757,7 @@ function importRecipe(text) {
     return makeBlock(b.type, b.data);
   });
   state.blocks = blocks;
+  clearExample();
   $("#network").value = recipe.network;
   $("#extra-witnesses").value = String(additional);
   state.chain = null;

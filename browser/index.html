@@ -72,13 +72,15 @@
       <section class="composer">
         <div class="composer-heading">
           <div>
-            <h1>Untitled transaction</h1>
+            <h1 id="transaction-title">Untitled transaction</h1>
           </div>
           <div class="recipe-actions">
+            <button id="examples" class="quiet">Examples</button>
             <button id="import-recipe" class="quiet">Import</button
             ><button id="export-recipe" class="quiet">Export</button>
           </div>
         </div>
+        <p id="example-note" class="field-note example-note" hidden></p>
         <div class="wallet-strip">
           <div>
             <strong id="wallet-name">No wallet connected</strong>
@@ -193,6 +195,98 @@
         </button>
       </aside>
     </main>
+    <dialog
+      id="examples-dialog"
+      class="examples-dialog"
+      aria-labelledby="examples-title"
+    >
+      <div class="dialog-heading">
+        <h2 id="examples-title">Example transactions</h2>
+        <button id="close-examples" class="quiet">Close</button>
+      </div>
+      <p class="field-note">
+        Preprod / Preview · Use your connected testnet wallet.
+      </p>
+      <label
+        >Example<select id="example-kind">
+          <option value="lock">Lock ADA · redeemer = datum</option>
+          <option value="unlock">Unlock ADA · redeemer = datum</option>
+          <option value="native-mint">Mint tokens · wallet signature</option>
+          <option value="native-burn">Burn tokens · wallet signature</option>
+          <option value="plutus-mint">Mint tokens · redeemer = 42</option>
+          <option value="plutus-burn">Burn tokens · redeemer = 42</option>
+          <option value="collateral">Prepare collateral · 5 ADA</option>
+        </select></label
+      >
+      <p id="example-description" class="field-note"></p>
+      <div class="example-fields">
+        <label data-example-for="lock"
+          >Lock amount (ADA)<input
+            id="example-amount"
+            value="10"
+            inputmode="decimal"
+        /></label>
+        <label data-example-for="lock"
+          >Datum (integer)<input
+            id="example-datum"
+            value="42"
+            inputmode="numeric"
+        /></label>
+        <div data-example-for="unlock" class="example-wide" hidden>
+          <label
+            >Confirmed script output<input
+              id="example-input"
+              placeholder="transaction-hash#output-index"
+              spellcheck="false"
+          /></label>
+          <button id="example-last-lock" class="quiet" type="button">
+            Use last submitted lock
+          </button>
+        </div>
+        <label
+          data-example-for="native-mint native-burn plutus-mint plutus-burn"
+          hidden
+          >Token name (UTF-8)<input id="example-token" value="ExampleToken"
+        /></label>
+        <label
+          data-example-for="native-mint native-burn plutus-mint plutus-burn"
+          hidden
+          >Quantity (base units)<input
+            id="example-quantity"
+            value="100"
+            inputmode="numeric"
+        /></label>
+        <label data-example-for="unlock plutus-mint plutus-burn" hidden
+          >Redeemer (integer)<input
+            id="example-redeemer"
+            value="42"
+            inputmode="numeric"
+        /></label>
+        <label
+          data-example-for="unlock plutus-mint plutus-burn"
+          class="example-wide"
+          hidden
+          >Collateral UTXO<select id="example-collateral"></select
+          ><span class="field-note"
+            >A separate ADA-only output of at least 5 ADA. Use Prepare
+            collateral if needed.</span
+          ></label
+        >
+      </div>
+      <p id="example-next" class="field-note"></p>
+      <p
+        id="example-error"
+        class="json-dialog-message error"
+        role="alert"
+        hidden
+      ></p>
+      <div class="json-dialog-actions">
+        <button id="example-load" class="primary">Load example</button>
+        <span class="field-note"
+          >Replaces the current draft. Review the blocks before balancing.</span
+        >
+      </div>
+    </dialog>
     <dialog
       id="import-dialog"
       class="json-dialog"

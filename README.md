@@ -38,6 +38,27 @@ paste that JSON back into the editor. Both dialogs also support files. Invalid
 JSON leaves the current transaction intact; a successful import clears the old
 balance and signatures so the imported transaction can be balanced again.
 
+**Examples** loads editable transactions for Preprod or Preview:
+
+- Lock ADA with an inline integer datum, then unlock it when the redeemer equals
+  that datum. A different redeemer fails during browser-side script evaluation.
+- Mint and burn tokens under a native policy requiring your wallet signature.
+- Mint and burn tokens under a Plutus V2 policy requiring integer redeemer `42`.
+- Prepare a separate 5 ADA wallet output for collateral.
+
+Connect a funded testnet wallet and configure chain data first. Load an example,
+review its blocks, balance, inspect, sign, and submit. Wait for confirmation
+before spending its outputs. The tab remembers the latest submitted lock output
+and token name/quantity for each minting example, including across reloads.
+Refresh the wallet after minting before loading a burn example. The same recipes
+can be copied with Export and restored with Import.
+
+These public Plutus examples are deliberately minimal: anyone who supplies the
+matching datum can unlock the ADA, and anyone who supplies `42` can use the
+Plutus minting policy. The example picker only supports testnets. Script bytes,
+addresses and policy hashes are produced by Cardano API inside WASM; no browser
+transaction library or backend builder is added.
+
 To reuse an installed toolchain:
 
 ```sh
@@ -88,8 +109,12 @@ npm run test:editor
 npm run serve
 # In another terminal:
 npm run test:browser
+npm run test:examples
 ```
 
 Browser tests connect a CIP-30 test adapter, then disable networking before
 transaction work. They cover asset editing, large integer datum inspection,
 floating/resizing/full-screen review, balancing, signing, and edit invalidation.
+The example tests additionally exercise lock/unlock, native and Plutus mint/burn,
+rejected redeemers, and the handoff between submitted transactions. Their wallet
+and chain inputs are controlled fixtures; they never submit to a real network.

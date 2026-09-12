@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
-module MatchingNumber (matchingNumber, source) where
+module MatchingNumber (matchingNumber, matchingRedeemer, source) where
 
 import Cardano.Api qualified as C
 import PlutusCore qualified as P
@@ -25,3 +25,17 @@ matchingNumber = C.PlutusScriptSerialised $ serialiseUPLC $
 
 source :: String
 source = "\\datum redeemer context -> if unIData datum == unIData redeemer then () else error ()"
+
+-- A minting policy receives redeemer and context, without a spending datum.
+matchingRedeemer :: C.PlutusScript C.PlutusScriptV2
+matchingRedeemer = C.PlutusScriptSerialised $ serialiseUPLC $
+  U.Program () plcVersion100 $ lam $ lam $
+    U.Force () $
+      app (app (app (U.Force () (U.Builtin () P.IfThenElse)) condition)
+        (U.Delay () (mkConstant () ()))) (U.Delay () (U.Error ()))
+  where
+    lam = U.LamAbs () (U.DeBruijn 0)
+    app = U.Apply ()
+    condition = app (app (U.Builtin () P.EqualsInteger)
+      (app (U.Builtin () P.UnIData) (U.Var () (U.DeBruijn 2))))
+      (mkConstant () (42 :: Integer))

@@ -6,7 +6,7 @@ license: Apache-2.0
 
 executable sc-tools-browser
   main-is: Main.hs
-  other-modules: MatchingNumber PortChecks LiveTx
+  other-modules: MatchingNumber PortChecks LiveTx ExampleScripts
   hs-source-dirs: .
   default-language: Haskell2010
   default-extensions: ImportQualifiedPost

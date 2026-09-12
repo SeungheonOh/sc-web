@@ -45,6 +45,7 @@ import Data.SOP.NonEmpty (NonEmpty(..))
 import Ouroboros.Consensus.HardFork.History qualified as H
 import Ouroboros.Consensus.Block.Abstract (GenesisWindow(..))
 import Text.Read (readMaybe)
+import ExampleScripts (exampleScripts)
 
 type Era = C.ConwayEra
 type Builder = B.TxBuilder Era
@@ -435,6 +436,7 @@ handleRequest :: Value -> IO Value
 handleRequest request = do
   outcome <- try @SomeException $ case parseEither (withObject "request" (\o -> o .: "action" :: Parser Text)) request of
     Left e -> pure (failure e)
+    Right "exampleScripts" -> pure $ either failure id (parseEither exampleScripts request)
     Right "balance" -> case parseEither (withObject "balance request" parseContext) request of
       Left e -> pure (failure e)
       Right ctx -> balance ctx
